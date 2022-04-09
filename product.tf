@@ -31,6 +31,9 @@ resource "aws_dynamodb_table" "product_table" {
     projection_type = "ALL"
   }
   
+  point_in_time_recovery {
+    enabled = true
+  }
 }
 
 # Create API Gateway 
@@ -137,6 +140,9 @@ resource "aws_lambda_function" "CreateProductHandler" {
     timeout     = "5"
     memory_size = "128"
 
+  tracing_config {
+    mode = "PassThrough"
+  }
 }
 
 # Create Loadbalancer 
@@ -151,6 +157,8 @@ resource "aws_lb" "loadBalancer" {
       prefix = "log-bucket"
       enabled = true
     }
+  enable_deletion_protection = true
+  drop_invalid_header_fields = true
 }
 
 
@@ -158,6 +166,13 @@ resource "aws_lb" "loadBalancer" {
 resource "aws_s3_bucket" "productBucket" {
 
     bucket = "productsBucket"
-    acl    = "public-read"
+    acl    = "private"
+}
 
-} 
+resource "aws_s3_bucket_versioning" "productBucket" {
+  bucket = aws_s3_bucket.productBucket.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
